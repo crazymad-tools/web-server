@@ -8,8 +8,19 @@
 #ifndef _CONTENTTYPE_H
 #define _CONTENTTYPE_H
 
-#define TEXTHTML 11
-#define TEXTXML 12
+#define GET			1
+#define POSET		2
+#define HEAD		3
+#define PUT			4
+#define DELETE		5
+#define TRACE		6
+#define CONNECT		7
+#define OPTIONS		8
+
+#define TEXTHTML	11
+#define TEXTXML		12
+#define IMAGEPNG	21
+#define IMAGEGIF	22
 
 #endif
 

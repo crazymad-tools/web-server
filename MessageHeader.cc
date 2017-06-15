@@ -64,10 +64,29 @@ int MessageHeader::makeContentType(int mode) {
 	case TEXTXML:
 		data = "text/xml; ";
 		break;
+	case IMAGEPNG:
+		data = "image/png; ";
+		break;
+	case IMAGEGIF:
+		data = "imgae/gif; ";
 	};
-	data += "charset=UTF-8\r\n";
+	//data += "charset=UTF-8\r\n";
 	headers.insert(pair<string, string>(header, data));
 	return 1;
+}
+// 根据文件名字生成传输数据类型信息
+int MessageHeader::makeContentType(string filename) {
+	int dot = filename.rfind('.');
+	string suffix = filename.c_str()+dot;
+	int mode = 0;
+	if (suffix == "png") {
+		mode = 21;
+	} else if (suffix == "gif") {
+		mode = 22;
+	} else if (suffix == "html") {
+		mode = 11;
+	}
+	makeContentType(mode);
 }
 
 int MessageHeader::makeContentLength(int length) {
