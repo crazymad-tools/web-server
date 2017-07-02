@@ -21,11 +21,11 @@ FileReader::FileReader(string fileName)
 
 FileReader::FileReader() : data(NULL), fd(-1) { }
 
-FileReader::~FileReader();/* {
+FileReader::~FileReader() {
 	if (data) {
 		delete data;
 	}
-}*/
+}
 
 int FileReader::Open(string fileName) {
 	this->fileName = fileName;

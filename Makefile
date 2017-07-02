@@ -11,3 +11,9 @@ $(OBJECT): $(SRC_FILE)
 .PHONY : clean
 clean:
 	-rm $(PROJECT) $(OBJECT)
+.PHONY : cleano
+cleano:
+	-rm $(OBJECT)
+.PHONY : install
+install:
+	cp chttp /usr/bin

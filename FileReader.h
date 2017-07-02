@@ -25,11 +25,11 @@ private:
 public:
 	FileReader(std::string fileName);		// 通过构造函数打开文件
 	FileReader();
-	~FileReader() {
+	~FileReader();/* {
 		if (data) {
 			delete data;
 		}
-	}
+	}*/
 	int Open(std::string fileName);			// 通过成员方法打开文件
 	int Read();						// 读取文件内容
 	uint8_t* Get();						// 获取文件内容
