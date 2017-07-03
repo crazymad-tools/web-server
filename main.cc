@@ -17,12 +17,14 @@
 #include <MessageHeader.h>
 #include <MessageParse.h>
 #include <FileReader.h>
+#include <chttp.h>
 
 using namespace std;
 
 map<int, Socket*> fds;					// 现存的套接字与Socket的映射关系
+struct chp_log log;
 
-void init_para(int argc, char* argv[]) {
+void init_para(int argc, char* argv[]) {				// 初始化命令行参数
 	int pid = getpid();
 	int fd = open("/root/.chttp.pid", O_RDWR);
 	if (fd == -1) {
@@ -47,8 +49,10 @@ void init_para(int argc, char* argv[]) {
 	}
 }
 
-void quit(int) {
+void quit(int) {						// 退出程序时的准备工作
 	remove("/root/.chttp.pid");
+	log_out(log, "chttp stop\n");
+	close(log.fd);
 	exit(0);
 }
 
@@ -73,10 +77,12 @@ void init_daemon() {
 }
 
 void init(int argc, char* argv[]) {
-	chdir("/var/www/html");				// 改变工作目录
-	init_daemon();						// 守护进程设置
+	//init_daemon();						// 守护进程设置
 	init_para(argc, argv);				// 进程命令行参数读取
 	init_signal();						// 进程信号捕捉设置
+	init_log(&log, "log");
+	chdir("/var/www/html");				// 改变工作目录
+	log_out(log, "chttp start");
 }
 
 void epoll_add(int epfd, int fd) {
@@ -90,7 +96,7 @@ void epoll_del(int epfd, int fd) {
 	epoll_ctl(epfd, EPOLL_CTL_DEL, fd, NULL);
 }
 
-void sendResponse(int fd) {
+void sendResponse(int epfd, int fd) {
 	Socket* client = fds[fd];
 	char tmp[1000];
 	int ret = client->Read(tmp);
@@ -99,7 +105,9 @@ void sendResponse(int fd) {
 		delete client;
 		for (map<int, Socket*>::iterator it = fds.begin(); it != fds.end(); it++) {
 			if (it->first == fd) {
+				log_out(log, "connect close from %s", fds[fd]->ipToString());
 				fds.erase(it);
+				epoll_del(epfd, fd);
 				break;	
 			}
 		}
@@ -130,8 +138,9 @@ void sendResponse(int fd) {
 	strncat(buf2, statu, strlen(statu));
 	strncat(buf2, buf, header.getSize());
 	//strncat(buf2, text, length);
-	client->Write(buf2, strlen(statu)+header.getSize());
-	client->Write(text, length);
+	client->Write(buf2, strlen(statu)+header.getSize());// 传输报头
+	client->Write(text, length);						// 传输附加数据
+	log_out(log, "send file:%s to %s", parse.getRequestData().dest.c_str(), fds[fd]->ipToString());
 }
 
 int main(int argc, char* argv[]) {
@@ -161,8 +170,9 @@ int main(int argc, char* argv[]) {
 				Socket *client = new Socket(socketData);
 				fds.insert(pair<int, Socket*>(client->getFd(), client));
 				epoll_add(epfd, client->getFd());
+				log_out(log, "a new connection from %s", client->ipToString());
 			} else {
-				sendResponse(events[i].data.fd);
+				sendResponse(epfd, events[i].data.fd);
 			}
 		}
 	}
@@ -170,56 +180,3 @@ int main(int argc, char* argv[]) {
 	return 0;
 }
 
-// 测试在网络连接、响应包头生成器
-int main2(int argc, char* argv[]) {
-	init_para(argc, argv);
-	init_signal();
-	//cout << chroot("/var/www/html") << endl;;
-	chdir("/var/www/html");
-	// 建立网络链接
-	Socket server(8080);
-	//Socket server(80);
-	server.init();
-	server.Bind();
-	server.Listen(10);
-	// 开启事件循环
-	while (1) {
-		// 创建连接并读取数据
-		SocketData data;
-		server.Accept(&data);
-		Socket client(data);
-		char tmp[1000];
-		client.Read(tmp);
-		// 创建request报头解析器
-		MessageParse parse;
-		parse.parse(tmp, sizeof tmp);
-		memset(tmp, 0, sizeof tmp);
-		// 读取文件
-		//cout << parse.getRequestData().dest << endl;
-		FileReader reader(parse.getRequestData().dest.c_str());
-		reader.Read();
-		char *text = (char*)reader.Get();
-		int length = reader.getSize();
-
-		MessageHeader header;
-		header.makeDate();
-		header.makeServer("CrazyMad/0.0.1 (CentOS)");
-		header.makeContentLength(length);
-		header.makeConnection(false);
-		header.makeContentType(parse.getRequestData().dest);
-		header.makeKeepAlive(5, 100);
-		char buf[1000] = "";
-		header.getHeaders(buf);
-		char statu[100] = "HTTP/1.1 200 OK\r\n";
-		char buf2[1000] = { 0 };
-		strncat(buf2, statu, strlen(statu));
-		strncat(buf2, buf, header.getSize());
-		//strncat(buf2, text, length);
-		client.Write(buf2, strlen(statu)+header.getSize());
-		client.Write(text, length);
-		client.Close();
-		//cout << buf << endl;
-	}
-
-	return 0;	
-}
