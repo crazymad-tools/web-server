@@ -18,7 +18,7 @@ int MessageHeader::makeDate() {
 		"", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"
 	};
 	string months[13] = {
-		"", "Jan", "Feb", "Mar", "Apr", "May", "May", "Jul", "Aug", "Sep", "Oct", "Nov", " Dec"
+		"Jan", "Feb", "Mar", "Apr", "May", "May", "Jul", "Aug", "Sep", "Oct", "Nov", " Dec"
 	};
 	string header = "Date: ";
 	string data = "";

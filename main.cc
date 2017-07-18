@@ -19,6 +19,8 @@
 #include <FileReader.h>
 #include <chttp.h>
 
+#define print(a) write(STDOUT_FILENO, a, strlen(a))
+
 using namespace std;
 
 map<int, Socket*> fds;					// 现存的套接字与Socket的映射关系
@@ -106,6 +108,7 @@ void sendResponse(int epfd, int fd) {
 		for (map<int, Socket*>::iterator it = fds.begin(); it != fds.end(); it++) {
 			if (it->first == fd) {
 				log_out(log, "connect close from %s", fds[fd]->ipToString());
+				//sleep(1);
 				fds.erase(it);
 				epoll_del(epfd, fd);
 				break;	
